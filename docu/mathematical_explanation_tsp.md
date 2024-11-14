@@ -5,7 +5,11 @@ The representation of TSP using Hopfield networks lends itself to an easy adapta
 
 Hopfield networks are directly inspired by the Classical Ising Spin Glass Model, it consists of $n$ nodes on a lattice, the nodes can have values of 0 and 1 (in the Ising Model these values are spin-values of +-1 or +-1/2). The energy function of any HN can be written as:
 
-$E(\mathbf{v}) = -\frac{1}{2}\sum_{i = 1}^{n}\sum_{j = 1}^{n} T_{i,j}v_iv_j - \sum_{i=1}^{n}I_iv_i$
+$
+\begin{align}
+E(\mathbf{v}) = -\frac{1}{2}\sum_{i = 1}^{n}\sum_{j = 1}^{n} T_{i,j}v_iv_j - \sum_{i=1}^{n}I_iv_i
+\end{align}
+$
 
 which can be rewritten and vectorized as
 
