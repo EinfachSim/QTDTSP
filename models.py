@@ -27,6 +27,7 @@ class HopfieldNetwork:
             print("First term (global inhibitory connections):", V.T@M4@V)
             print("Second term (Magnetic Field term):", V.T.dot(self.I))
             print("Energy (with constant term):", -0.5 * V.T@(T@V) - V.T.dot(self.I) + C*T.shape[0])
+            print("Constant term:", C*T.shape[0])
             print("If V is a valid tour then the energy with the constant term is equal to the tour length!")
         return -0.5 * V.T@(T@V) - V.T.dot(self.I)
     def evolve(self, v_0):
@@ -181,7 +182,7 @@ class TSP:
 class CompleteGraph:
     def __init__(self, n):
         # Example Graph
-        self.G = nx.complete_graph(4)
+        self.G = nx.complete_graph(n)
 
         for (start, end) in self.G.edges:
             self.G.edges[start, end]['weight'] = random.randint(1, 10)
@@ -208,3 +209,6 @@ class CompleteGraph:
         plt.axis("off")
         plt.tight_layout()
         plt.show()
+    def get_adj(self):
+        import networkx as nx
+        return nx.adjacency_matrix(self.G).toarray()
