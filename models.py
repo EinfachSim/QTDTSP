@@ -178,7 +178,7 @@ class TSP:
                 "state vector should be QuasiDistribution, Statevector, ndarray, or dict. "
                 f"But it is {type(state_vector)}."
             )
-
+'''UNDOCUMENTED'''
 class CompleteGraph:
     def __init__(self, n):
         # Example Graph
@@ -212,3 +212,63 @@ class CompleteGraph:
     def get_adj(self):
         import networkx as nx
         return nx.adjacency_matrix(self.G).toarray()
+'''UNDOCUMENTED'''
+class TemporalGraph: #dummy class
+    def __init__(self, G_list):
+        pass
+    def __init__(self, n):
+        self.n = n
+        graphs = [CompleteGraph(n)]
+        self.adj = graphs[-1].get_adj()
+        for i in range(1,n):
+            graphs.append(CompleteGraph(n))
+            new_adj = graphs[-1].get_adj()
+            self.adj = np.hstack([self.adj, new_adj])
+        self.graphs = graphs
+    def draw_graphs(self):
+        for g in self.graphs:
+            g.draw_graph()
+'''UNDOCUMENTED'''
+class TDTSP(TSP):
+    def __init__(self, temporal_graph, A=500, B=500, C=200, D=1):
+        self.adj = temporal_graph.adj
+        self.n = temporal_graph.n
+        self.I = 2*C * (self.n) * np.ones(self.n**2)
+        self.A = A
+        self.B = B
+        self.C = C
+        self.D = 2*D
+        self.offset = C * self.n**2
+        self.T = self.compute_T()
+    def selector(self, i):
+        result = np.zeros((self.n, self.n))
+        result[i,i] = 1
+        return result
+    def get_commuter(self, size, idx):
+        result = np.zeros(size)
+        result[idx] = 1
+        return circulant(result).T
+    def compute_K(self):
+        selector = self.selector(0)
+        P_1 = self.get_commuter(self.n,1)
+        P_2 = self.get_commuter((self.n)**2, -self.n)
+        A = self.adj.copy()
+        K = np.kron(self.adj, selector)
+        for i in range(1,self.n):
+            selector = P_1.T@selector@P_1
+            A = A@P_2
+            K += np.kron(A, selector)
+        return K[:self.n**2, :self.n**2]
+    
+    def compute_T(self):
+        Id = np.eye(self.n)
+        J = 1-Id
+        M1 = np.kron(Id, J)
+        Phi = self.commutation_matrix(self.n)
+        M2 = Phi.T@(M1@Phi)
+        K = self.compute_K()
+        P = self.get_commuter(self.n, -1).T
+        M3 = K@(np.kron(Id, P))
+        M4 = np.ones((self.n**2, self.n**2))
+        T = -self.A*M1 -self.B*M2 -self.C*2*M4 - self.D*M3
+        return (M1, M2, M3, self.C*2*M4, T, self.C)
