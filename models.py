@@ -13,21 +13,20 @@ from qiskit_optimization import QuadraticProgram
 # matrix from the adjacency matrix of the tsp problem and
 # (a method to get the energy of the current state)
 class HopfieldNetwork:
-    def __init__(self, T, I):
+    def __init__(self, T, I, offset):
         self.T = T
         self.I = I
-    
+        self.offset = offset
     def compute_energy(self, V, debug=False):
-        M1, M2, M3, M4, T, C = self.T
+        M1, M2, M3, M4, T, spare = self.T
         if debug:
-            print(V)
             print("First term (inhibitory row connections):", V.T@M1@V)
             print("First term (inhibitory column connections):", V.T@M2@V)
             print("First term (Data term):", V.T@M3@V)
             print("First term (global inhibitory connections):", V.T@M4@V)
             print("Second term (Magnetic Field term):", V.T.dot(self.I))
-            print("Energy (with constant term):", -0.5 * V.T@(T@V) - V.T.dot(self.I) + C*T.shape[0])
-            print("Constant term:", C*T.shape[0])
+            print("Energy (with constant term):", -0.5 * V.T@(T@V) - V.T.dot(self.I) + self.offset)
+            print("Constant term:", self.offset)
             print("If V is a valid tour then the energy with the constant term is equal to the tour length!")
         return -0.5 * V.T@(T@V) - V.T.dot(self.I)
     def evolve(self, v_0):
