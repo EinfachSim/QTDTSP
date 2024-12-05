@@ -305,4 +305,43 @@ This concludes the edits we needed to make to the data term in order to use HNs 
 
 
 # Dynamic TSP
-TODO
+While TDTSP is a step in the right direction, it ultimately has a huge constraint on our solutions: The change in edge weights cannot depend on which edge we actually took. So, for example, if we look at the graph in the following figure, we take edge (a,b). But since it took us 10 time-units to traverse edge (a,b), it could be that the graph's underlying system is in a different state than if we took, say, edge (a,c)! 
+
+![Time Evolution in TDTSP](/Users/simonkoehl/Desktop/Studium/ESA/tryouts/docu/assets/IMG_0691.jpg)
+
+A great example for this is a constellation of asteroids. If we go from asteroid A to asteroid B in 10 time-units, we would arrive at a different constellation than if we went from A to C in 5 time-units. 
+
+![Time Evolution in DTSP (excerpt)](/Users/simonkoehl/Desktop/Studium/ESA/tryouts/docu/assets/IMG_0692.jpg "Title")
+
+One way to solve this is to impose a constraint on our resting time on each asteroid: We take the edge that belongs to the shortest possible Hamiltonian cycle, but wait around until the system is in a "legal" constellation again! In our example this would mean that we take, say, (A,C) and then wait at C for 5 time-units. Then the overall time passed is 10 time-units, and we know which edge to take then. So we always wait on any asteroid until the maximum time it would have taken to get to any asteroid has passed. By doing this, TDTSP looses almost all practicality, since the actual time we need to traverse all asteroid is just the sum of all maximal edges in every graph of the sequence.
+
+To solve this problem, we can impose a dependency of the next graph's weights on the edges we already took.
+
+One approach is to interpret the problem of finding a tour on a given temporal Graph $T$ consisting of a sequence of graphs $(G_1, G_2, ...)$ as finding a minimum weight $n$-cycle on a different graph $G$. A temporal graph defines a sequence of graphs with changing edge weights. To construct $G$, we 'unravel' every tour on T and by this construct a tree-like graph (whose leaves connect back to the root), that only consists of $n$-cycles. See Figure 3 for a visual. The small graph on the left corresponds to the first complete graph of $T$, the tree-like graph on the right is the time-unraveling of $T$. In this approach the first node is fixed to be A.
+
+![DTSP as $n$-cycle](/Users/simonkoehl/Desktop/Studium/ESA/tryouts/docu/assets/IMG_0697.jpg "Title")
+
+In our interaction matrix the following terms then have to change:
+
+\begin{equation}
+M_1 = I_{n_G} \otimes J_{n_T}
+\end{equation}
+\begin{equation}
+M_2 = (\Phi^{n_T, n_G})^T(I_{n_T} \otimes J_{n_G})(\Phi^{n_T, n_G})
+\end{equation}
+\begin{equation}
+M_3 = A \otimes \alpha_{n_T}
+\end{equation}
+
+Where $n_G$ and $n_T$ are number of vertices in $G$ and $T$ respectively and the subscripts refer to the spaces the matrices originate from, i.e. $\alpha_{n_T}$ is the circulant matrix of shape $n_T \times n_T$ with the second and last entry being 1 in the first row.
+
+These enforce that our (reshaped) solution of shape $(n_G*n_T) \times (n_G*n_T)$ has exactly one 1 per column and row and that the path length is minimal. A similar approach can be seen in [[Bauckhage et. al., 2018]](https://www.mlgworkshop.org/2018/papers/MLG2018_paper_7.pdf), where the objective was to find the shortest path.
+
+This solves DTSP, but the space complexity explodes, as this approach uses $n_G$ qubits. Consider the following:
+
+$\begin{aligned}
+n_G &= 1 + (n-1) + (n-1)(n-2) + (n-1)(n-2)(n-3) + ... + 2*(n-1)! \\
+&= \sum_{i=1}^{n} \prod_{k=1}^{i}(n-k) \in \mathcal{O}(n!)
+\end{aligned}
+$ 
+So we need superexponentially many qubits to solve DTSP in this representation. For a tour of 10 cities for example we would need upwards of $10! = 3628800$ qubits in a quantum annealer, which is absolutely infeasible. So the goal is to find a different encoding that reduces the problem size to a more manageable qubit number, while still ensuring that we can formulate the minimization as QUBO. It seems as though this should be possible, especially since the interaction matrix is highly structured and the data term $M_3$ as well as the solutions are rather sparse. There does seem to be a tradeoff between denser encodings and being able to formulate the problem as a quadratic cost function. If we were to ignore this last constraint for now, we can take a look at the theoretical minimum: On a complete graph with $n$ vertices, if we fix the first vertex, there are $(n-1)!$ tours (which correspond directly to the cycles in $G$). So we have an information content of $\log_2((n-1)!) \in \mathcal{O}(n\log_2n)$ We can, for example, uniquely encode all 6 tours on a temporal graph with 4 vertices in a Bit-String of length 3. But then (this is not yet proven, but rather suspected) we cannot ensure the quadratic nature of computing $E$.
