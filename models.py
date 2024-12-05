@@ -3,7 +3,7 @@ import networkx as nx
 from scipy.linalg import circulant
 from collections import OrderedDict
 import random
-
+import pandas as pd
 from qiskit.quantum_info import Statevector
 from qiskit.result import QuasiDistribution
 from qiskit_optimization import QuadraticProgram
@@ -34,8 +34,9 @@ class HopfieldNetwork:
 
 # This class initializes the TSP problem and provides the T and I matrix for the hopfield network
 class TSP:
-    def __init__(self, G, A=500, B=500, C=20, D=1):
-        self.adj = nx.adjacency_matrix(G).toarray()
+    #takes in only an adjacency-matrix as required argument
+    def __init__(self, adj=None, A=500, B=500, C=20, D=1):
+        self.adj = adj
         self.n = self.adj.shape[0]
         self.I = 2*C * (self.n) * np.ones(self.n**2)
         self.A = A
@@ -44,6 +45,20 @@ class TSP:
         self.D = D
         self.offset = C * self.n**2
         self.T = self.compute_T()
+    
+    def from_graph(G, A=500, B=500, C=20, D=1):
+        adj = nx.adjacency_matrix(G).toarray()
+        return TSP(adj, A, B, C, D)
+    
+    def from_instance_file(filepath, A=500, B=500, C=20, D=1):
+        instance_df = pd.read_csv(filepath, header=None).rename(columns={0: "x", 1: "y"})
+        #Computing the adjacency matrix
+        from scipy.spatial.distance import cdist
+        coords = instance_df[["x", "y"]].to_numpy()
+        print("test")
+        adj = cdist(coords, coords, metric='euclidean')
+        print("test2")
+        return TSP(adj, A, B,C, D)
     #Need the commutation matrix for computing M2 in T
     def commutation_matrix(self, n):
         # Initialize an empty n^2 x n^2 matrix
@@ -65,13 +80,17 @@ class TSP:
         return circulant(first_column)
     
     def compute_T(self):
+        print("test3")
         Id = np.eye(self.n)
         J = 1-Id
+        print("WHYYY")
         M1 = np.kron(Id, J)
+        print("test4")
         Phi = self.commutation_matrix(self.n)
         M2 = Phi.T@(M1@Phi)
         alpha_matrix = self.circulant_matrix()
         M3 = np.kron(self.adj,alpha_matrix)
+        print("test5")
         M4 = np.ones((self.n**2, self.n**2))
         T = -self.A*M1 -self.B*M2 -self.C*2*M4 - self.D*M3
         return (M1, M2, M3, self.C*2*M4, T, self.C)
