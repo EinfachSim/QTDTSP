@@ -55,9 +55,7 @@ class TSP:
         #Computing the adjacency matrix
         from scipy.spatial.distance import cdist
         coords = instance_df[["x", "y"]].to_numpy()
-        print("test")
         adj = cdist(coords, coords, metric='euclidean')
-        print("test2")
         return TSP(adj, A, B,C, D)
     #Need the commutation matrix for computing M2 in T
     def commutation_matrix(self, n):
@@ -80,17 +78,13 @@ class TSP:
         return circulant(first_column)
     
     def compute_T(self):
-        print("test3")
         Id = np.eye(self.n)
         J = 1-Id
-        print("WHYYY")
         M1 = np.kron(Id, J)
-        print("test4")
         Phi = self.commutation_matrix(self.n)
         M2 = Phi.T@(M1@Phi)
         alpha_matrix = self.circulant_matrix()
         M3 = np.kron(self.adj,alpha_matrix)
-        print("test5")
         M4 = np.ones((self.n**2, self.n**2))
         T = -self.A*M1 -self.B*M2 -self.C*2*M4 - self.D*M3
         return (M1, M2, M3, self.C*2*M4, T, self.C)
